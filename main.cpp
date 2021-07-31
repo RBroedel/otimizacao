@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <fstream>
 #include <list>
+#include <unistd.h>
 
 using namespace std;
 
@@ -20,9 +21,13 @@ public:
   int demand[SIZE];
 };
 
-void getIndexesNodePositions(int positions[], string line)
-{
+void getIndexesNodePositions(int positions[], string line){
   int spaceOrder = 0;
+  if (!(line[0] == ' '))
+  {
+    spaceOrder++;
+  }
+  
   for (int i = 0; i < line.length(); i++)
   {
     if (spaceOrder == 0 && line[i] == ' ')
@@ -68,10 +73,16 @@ void readInstance(string directory, Instance *instance);
 int main(int argc, char *argv[])
 {
   Instance instance;
-  string directoryFiles = current_working_directory() + "\\";
+  // DESCOMENTAR SE RODAR NO WINDOWS
+  //string directoryFiles = current_working_directory() + "\\";
+  // COMENTAR SE RODAR NO WINDOWS
+  string directoryFiles = current_working_directory() + "/";
 
   instance.name = getFileToRead();
-  directoryFiles += instance.name + "\\";
+  // DESCOMENTAR SE RODAR NO WINDOWS
+  //directoryFiles += instance.name + "\\";
+  // COMENTAR SE RODAR NO WINDOWS
+  directoryFiles += instance.name + "/";
   getDimensionAndTrucksFromName(instance.name, &instance.dimension, &instance.trucks);
   readInstance(directoryFiles, &instance);
   printInstace(instance);
@@ -79,16 +90,16 @@ int main(int argc, char *argv[])
 }
 
 void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTrucks){
-  int stratDimension;
+  int startDimension;
   for (int i = 0; i < name.size(); i++)
   {
     if (name[i] == 'n')
     {
-      stratDimension = i+1;
+      startDimension = i+1;
     }
     if (name[i] == 'k')
     {
-      *dimension = stoi(name.substr(stratDimension,i));
+      *dimension = stoi(name.substr(startDimension,i));
       *instanceTrucks = stoi(name.substr(i+1,name.size()));
       return;
     }    
@@ -117,7 +128,7 @@ string getFileToRead()
 
 string current_working_directory()
 {
-  char *cwd = _getcwd(0, 0);
+  char *cwd = getcwd(0, 0);
   string working_directory(cwd);
   free(cwd);
   return working_directory;
