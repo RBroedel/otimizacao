@@ -4,10 +4,13 @@
 #include <fstream>
 #include <list>
 #include <unistd.h>
+#include <math.h>
 
 using namespace std;
 
 #define SIZE 101
+#define ROTAS 14
+#define NODE 101
 
 class Instance
 {
@@ -21,13 +24,22 @@ public:
   int demand[SIZE];
 };
 
-void getIndexesNodePositions(int positions[], string line){
+class Solucao
+{
+public:
+  int cost;
+  int trucks;
+  int rotas[ROTAS][NODE];
+};
+
+void getIndexesNodePositions(int positions[], string line)
+{
   int spaceOrder = 0;
   if (!(line[0] == ' '))
   {
     spaceOrder++;
   }
-  
+
   for (int i = 0; i < line.length(); i++)
   {
     if (spaceOrder == 0 && line[i] == ' ')
@@ -58,21 +70,40 @@ int getNodeDemand(string line)
   return 0;
 }
 
-void printInstace(Instance instance){
+void printInstace(Instance instance)
+{
   cout << "name: " << instance.name << " dimension: " << instance.dimension << " trucks: " << instance.trucks << endl;
-  for (int i = 0; i < instance.dimension; i++){
+  for (int i = 0; i < instance.dimension; i++)
+  {
     cout << "node: " << instance.x[i] << " " << instance.y[i] << " " << instance.demand[i] << endl;
   }
+}
+
+void printSolution(Solucao solution)
+{
+  for (int i = 0; i < solution.trucks; i++)
+  {
+    cout << "\nRoute #" << i + 1 << ": ";
+    for (int j = 0; solution.rotas[i][j] != NULL; j++)
+    {
+      cout << solution.rotas[i][j] << " ";
+    }
+  }
+  cout << "\nCost " << solution.cost << endl;
 }
 
 void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTrucks);
 string getFileToRead();
 string current_working_directory();
 void readInstance(string directory, Instance *instance);
+void heuConAle(Solucao &s, Instance inst);
+int calcDistancia(int x1, int x2, int y1, int y2);
+int jaAtendido(int atendidos[], int atual);
 
 int main(int argc, char *argv[])
 {
   Instance instance;
+  Solucao solucao;
   // DESCOMENTAR SE RODAR NO WINDOWS
   //string directoryFiles = current_working_directory() + "\\";
   // COMENTAR SE RODAR NO WINDOWS
@@ -85,25 +116,28 @@ int main(int argc, char *argv[])
   directoryFiles += instance.name + "/";
   getDimensionAndTrucksFromName(instance.name, &instance.dimension, &instance.trucks);
   readInstance(directoryFiles, &instance);
-  printInstace(instance);
+  //printInstace(instance);
+  heuConAle(solucao, instance);
+  printSolution(solucao);
   return 0;
 }
 
-void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTrucks){
+void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTrucks)
+{
   int startDimension;
   for (int i = 0; i < name.size(); i++)
   {
     if (name[i] == 'n')
     {
-      startDimension = i+1;
+      startDimension = i + 1;
     }
     if (name[i] == 'k')
     {
-      *dimension = stoi(name.substr(startDimension,i));
-      *instanceTrucks = stoi(name.substr(i+1,name.size()));
+      *dimension = stoi(name.substr(startDimension, i));
+      *instanceTrucks = stoi(name.substr(i + 1, name.size()));
       return;
-    }    
-  }  
+    }
+  }
 }
 
 string getFileToRead()
@@ -188,4 +222,102 @@ void readInstance(string directory, Instance *instance)
     }
     file.close();
   }
+}
+
+void heuConAle(Solucao &s, Instance inst)
+{
+  s.trucks = inst.trucks;
+  int rota = 0;
+  int capacityTruk = 0;
+  int posiRota = 0;
+  s.cost = 0;
+  int atendidos[32]; 
+  atendidos[0] = 1; 
+  for (int i = 1; i < inst.dimension; i++)
+  {
+    int node = (rand() % (inst.dimension + 1));
+
+    for (i = 0; i < inst.dimension; i++)
+    {
+      /* code */
+    }
+
+    if (capacityTruk + inst.demand[node] <= 100)
+    {
+      s.rotas[rota][posiRota] = node;
+      s.cost += calcDistancia(inst.x[s.rotas[rota][posiRota - 1]], inst.x[node], inst.y[s.rotas[rota][posiRota - 1]], inst.y[node]);
+      capacityTruk += inst.demand[node];
+      posiRota++;
+    }
+    else
+    {
+      s.rotas[rota][posiRota + 1] = NULL;
+      rota++;
+      posiRota = 0;
+      capacityTruk = 0;
+    }
+  }
+
+  int x = 0;
+}
+
+// void heuConAle(Solucao &s, Instance inst)
+// {
+//   int atendidos[inst.dimension - 1];
+//   int totalDemand = 0;
+//   int demandPerTruck = 0;
+//   for (int i = 0; i < inst.dimension; i++)
+//   {
+//     totalDemand += inst.demand[i];
+//   }
+
+//   demandPerTruck = totalDemand / inst.trucks;
+
+//   int posicao = 1;
+//   int custoBeneficio = -1;
+//   int custo = 0;
+//   int j = 1;
+//   int ultimoAtendido = 0;
+
+//   while (j < inst.dimension || custo < 100)
+//   {
+//     for (int i = 1; i < inst.dimension; i++)
+//     {
+//       if (ultimoAtendido == i)
+//       {
+//         continue;
+//       };
+//       int dist;
+//       int cb;
+//       if (custo == 0)
+//       {
+//         dist = calcDistancia(inst.x[0], inst.x[i], inst.y[0], inst.y[i]);
+//       }
+//       else
+//       {
+//         dist = calcDistancia(inst.x[posicao], inst.x[i], inst.y[posicao], inst.y[i]);
+//       }
+
+//       cb = dist / inst.demand[i];
+
+//       if (cb > custoBeneficio)
+//       {
+//         posicao = i;
+//         custoBeneficio = cb;
+//       }
+
+//       //cout << "1 -> " << i+1 <<" distancia: " << dist << " | custo/distancia " << dist/inst.demand[i] << endl;
+//     }
+//     custo += inst.demand[posicao];
+//     cout << inst.demand[posicao] << endl;
+//     cout << "posicao " << posicao << " c/b " << custoBeneficio << endl;
+//     custoBeneficio = -1;
+//     ultimoAtendido = posicao;
+//     j++;
+//   }
+// }
+
+int calcDistancia(int x1, int x2, int y1, int y2)
+{
+  return sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));
 }
