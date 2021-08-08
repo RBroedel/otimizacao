@@ -50,6 +50,7 @@ double calcDistancia(int x1, int x2, int y1, int y2);
 void ordenaCusto(int demand[], int dimensao);
 void montarMatrizDistancia(Instance);
 void montarMatrizDistanciaInstE134(Instance);
+void calculoFO(Solucao &s);
 
 int main(int argc, char *argv[])
 {
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 
   //printInstace(instance);
   heuConAle(solucao, instance);
+  calculoFO(solucao);
   printSolution(solucao);
   return 0;
 }
@@ -285,11 +287,6 @@ void heuConAle(Solucao &s, Instance inst)
 
   for (int i = 0; i < inst.dimension - 1; i++)
   {
-    if (custoOrdenado[i] == 31)
-    {
-      int a = 0;
-    }
-
     for (int j = caminhaoDesignarPonto; j < s.trucks; j++)
     {
       if (s.ocupacaoRota[j] + inst.demand[custoOrdenado[i]] <= inst.capacity)
@@ -327,6 +324,7 @@ void montarMatrizDistancia(Instance inst)
     }
   }
 
+  //PRINTA MATRIZ DE CUSTO DAS INSTANCIAS EXCETO E-N13-44
   // for(i = 0; i < inst.dimension; i++) {
   //   for(j = 0; j < inst.dimension; j++) {
   //     cout << matrizDistancia[i][j] << " ";
@@ -352,12 +350,27 @@ void montarMatrizDistanciaInstE134(Instance inst)
     }
   }
 
-  for (i = 0; i < inst.dimension; i++)
+  //PRINTA MATRIZ DE CUSTO DA INSTANCIA E-N13-44
+  // for (i = 0; i < inst.dimension; i++)
+  // {
+  //   for (j = 0; j < inst.dimension; j++)
+  //   {
+  //     cout << matrizDistancia[i][j] << " ";
+  //   }
+  //   cout << endl;
+  // }
+}
+
+void calculoFO(Solucao &s)
+{
+  int j;
+  for (int i = 0; i < s.trucks; i++)
   {
-    for (j = 0; j < inst.dimension; j++)
+    s.cost += matrizDistancia[0][s.rotas[i][0]];
+    for (j = 0; s.rotas[i][j+1] != -1; j++)
     {
-      cout << matrizDistancia[i][j] << " ";
+      s.cost += matrizDistancia[s.rotas[i][j]][s.rotas[i][j+1]];
     }
-    cout << endl;
+    s.cost += matrizDistancia[s.rotas[i][j]][0];
   }
 }
