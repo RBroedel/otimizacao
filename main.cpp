@@ -379,6 +379,7 @@ void montarMatrizDistanciaInstE134(Instance inst)
 void calculoFO(Solucao &s)
 {
   int j;
+  s.cost = 0;
   for (int i = 0; i < s.trucks; i++)
   {
     s.cost += matrizDistancia[0][s.rotas[i][0]];
