@@ -5,6 +5,7 @@
 #include <list>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 
 using namespace std;
 
@@ -51,9 +52,11 @@ void ordenaCusto(int demand[], int dimensao);
 void montarMatrizDistancia(Instance);
 void montarMatrizDistanciaInstE134(Instance);
 void calculoFO(Solucao &s);
+void clonarsolucao(Solucao &sOri, Solucao &sClo);
 
 int main(int argc, char *argv[])
 {
+  clock_t h = 0;
   Instance instance;
   Solucao solucao;
   string directoryFiles = current_working_directory() + "/";
@@ -73,8 +76,20 @@ int main(int argc, char *argv[])
   }
 
   //printInstace(instance);
-  heuConAle(solucao, instance);
-  calculoFO(solucao);
+  h = clock();
+  for (int i = 0; i < 1000; i++)
+  {
+    heuConAle(solucao, instance);
+  }  
+  h = clock() - h;
+  cout << "Tempo solução 1000 vezes: " << (double) h / CLOCKS_PER_SEC << endl;
+  h = clock();
+  for (int i = 0; i < 1000; i++)
+  {
+    calculoFO(solucao);
+  }  
+  h = clock() - h;
+  cout << "Tempo FO 1000 vezes: " << (double) h / CLOCKS_PER_SEC << endl;  
   printSolution(solucao);
   return 0;
 }
@@ -373,4 +388,8 @@ void calculoFO(Solucao &s)
     }
     s.cost += matrizDistancia[s.rotas[i][j]][0];
   }
+}
+
+void clonarsolucao(Solucao &sOri, Solucao &sClo) {
+	memcpy(&sClo, &sOri, sizeof (sOri));
 }
