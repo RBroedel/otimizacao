@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <time.h>
+#include <cstring>
 
 using namespace std;
 
@@ -53,6 +54,7 @@ void montarMatrizDistancia(Instance);
 void montarMatrizDistanciaInstE134(Instance);
 void calculoFO(Solucao &s);
 void clonarsolucao(Solucao &sOri, Solucao &sClo);
+void escreverArquivo(Solucao solucao);
 
 int main(int argc, char *argv[])
 {
@@ -80,17 +82,20 @@ int main(int argc, char *argv[])
   for (int i = 0; i < 1000; i++)
   {
     heuConAle(solucao, instance);
-  }  
+  }
   h = clock() - h;
-  cout << "Tempo solução 1000 vezes: " << (double) h / CLOCKS_PER_SEC << endl;
+  cout << "Tempo solução 1000 vezes: " << (double)h / CLOCKS_PER_SEC << endl;
+  double tempoSol1000 = (double)h / CLOCKS_PER_SEC;
   h = clock();
   for (int i = 0; i < 1000; i++)
   {
     calculoFO(solucao);
-  }  
+  }
   h = clock() - h;
-  cout << "Tempo FO 1000 vezes: " << (double) h / CLOCKS_PER_SEC << endl;  
+  cout << "Tempo FO 1000 vezes: " << (double)h / CLOCKS_PER_SEC << endl;
+  double tempoFo1000 = (double)h / CLOCKS_PER_SEC;
   printSolution(solucao);
+  escreverArquivo(solucao);
   return 0;
 }
 
@@ -151,9 +156,9 @@ void printSolution(Solucao solution)
       cout << solution.rotas[i][j] << " ";
     }
 
-    cout << "ocupacao: " << solution.ocupacaoRota[i];
+    cout << "Ocupacao: " << solution.ocupacaoRota[i];
   }
-  cout << "\nCost " << solution.cost << endl;
+  cout << "\nCusto: " << solution.cost << endl;
 }
 
 void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTrucks)
@@ -383,14 +388,39 @@ void calculoFO(Solucao &s)
   for (int i = 0; i < s.trucks; i++)
   {
     s.cost += matrizDistancia[0][s.rotas[i][0]];
-    for (j = 0; s.rotas[i][j+1] != -1; j++)
+    for (j = 0; s.rotas[i][j + 1] != -1; j++)
     {
-      s.cost += matrizDistancia[s.rotas[i][j]][s.rotas[i][j+1]];
+      s.cost += matrizDistancia[s.rotas[i][j]][s.rotas[i][j + 1]];
     }
     s.cost += matrizDistancia[s.rotas[i][j]][0];
   }
 }
 
-void clonarsolucao(Solucao &sOri, Solucao &sClo) {
-	memcpy(&sClo, &sOri, sizeof (sOri));
+void clonarsolucao(Solucao &sOri, Solucao &sClo)
+{
+  memcpy(&sClo, &sOri, sizeof(sOri));
+}
+
+void escreverArquivo(Solucao solucao)
+{
+  string saida = "saida.txt";
+  FILE *f = fopen(saida.c_str(), "w");
+
+	if (f == NULL)
+	{
+		perror("Erro ao abrir o arquivo.\n");
+		exit(EXIT_FAILURE);
+	}
+  for (int i = 0; i < solucao.trucks; i++)
+  {
+    fprintf(f, "%s%d%s", "Route # ", i + 1, ": ");
+    for (int j = 0; solucao.rotas[i][j] != -1; j++)
+    {
+      fprintf(f, "%d%s", solucao.rotas[i][j], " ");
+    }
+    fprintf(f, "%s%d\n", "Ocupacao: ", solucao.ocupacaoRota[i]);
+  }
+  fprintf(f, "%s%d\n", "Custo: ", solucao.cost);
+
+  fclose(f);
 }
