@@ -85,7 +85,6 @@ int main(int argc, char *argv[])
   }
   h = clock() - h;
   cout << "Tempo solução 1000 vezes: " << (double)h / CLOCKS_PER_SEC << endl;
-  double tempoSol1000 = (double)h / CLOCKS_PER_SEC;
   h = clock();
   for (int i = 0; i < 1000; i++)
   {
@@ -93,7 +92,6 @@ int main(int argc, char *argv[])
   }
   h = clock() - h;
   cout << "Tempo FO 1000 vezes: " << (double)h / CLOCKS_PER_SEC << endl;
-  double tempoFo1000 = (double)h / CLOCKS_PER_SEC;
   printSolution(solucao);
   escreverArquivo(solucao);
   return 0;
@@ -406,11 +404,12 @@ void escreverArquivo(Solucao solucao)
   string saida = "saida.txt";
   FILE *f = fopen(saida.c_str(), "w");
 
-	if (f == NULL)
-	{
-		perror("Erro ao abrir o arquivo.\n");
-		exit(EXIT_FAILURE);
-	}
+  if (f == NULL)
+  {
+    perror("Erro ao abrir o arquivo.\n");
+    exit(EXIT_FAILURE);
+  }
+
   for (int i = 0; i < solucao.trucks; i++)
   {
     fprintf(f, "%s%d%s", "Route # ", i + 1, ": ");
