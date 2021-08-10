@@ -430,21 +430,18 @@ void escreverArquivo(Solucao solucao)
 string readSolutionFile(string nome)
 {
   string line;
-  //RODANDO NO LINUX
   auto aux = "./" + nome + "/solution.txt";
   ifstream myfile(aux);
-  cout << "\nPrintando Instância: " + nome + "\n\n";
+  cout << "\nPrintando Solução da Instância: " + nome + "\n\n";
   if (myfile.is_open())
   {
-    while (!myfile.eof())
+    while (getline(myfile, line))
     {
-      getline(myfile, line);
       cout << line << endl;
     }
     myfile.close();
     return "Solução da instância: " + nome + " lida com sucesso!\n";
   }
-
   else
   {
     cout << "Unable to open file";
