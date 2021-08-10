@@ -55,6 +55,7 @@ void montarMatrizDistanciaInstE134(Instance);
 void calculoFO(Solucao &s);
 void clonarsolucao(Solucao &sOri, Solucao &sClo);
 void escreverArquivo(Solucao solucao);
+string readSolutionFile(string nome);
 
 int main(int argc, char *argv[])
 {
@@ -94,6 +95,8 @@ int main(int argc, char *argv[])
   cout << "Tempo FO 1000 vezes: " << (double)h / CLOCKS_PER_SEC << endl;
   printSolution(solucao);
   escreverArquivo(solucao);
+  auto teste = readSolutionFile(instance.name);
+  cout << teste + "\n";
   return 0;
 }
 
@@ -422,4 +425,29 @@ void escreverArquivo(Solucao solucao)
   fprintf(f, "%s%d\n", "Custo: ", solucao.cost);
 
   fclose(f);
+}
+
+string readSolutionFile(string nome)
+{
+  string line;
+  //RODANDO NO LINUX
+  auto aux = "./" + nome + "/solution.txt";
+  ifstream myfile(aux);
+  cout << "\nPrintando Instância: " + nome + "\n\n";
+  if (myfile.is_open())
+  {
+    while (!myfile.eof())
+    {
+      getline(myfile, line);
+      cout << line << endl;
+    }
+    myfile.close();
+    return "Solução da instância: " + nome + " lida com sucesso!\n";
+  }
+
+  else
+  {
+    cout << "Unable to open file";
+    return 0;
+  }
 }
