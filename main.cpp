@@ -14,9 +14,6 @@ using namespace std;
 #define ROTAS 14
 #define INF 99999
 
-double matrizDistancia[NODE][NODE];
-int custoOrdenado[NODE];
-
 class Instance
 {
 public:
@@ -37,7 +34,12 @@ public:
   int trucks;
   int rotas[ROTAS][NODE];
   int ocupacaoRota[ROTAS];
+  int temRotaAcimaDaCapacidade;
 };
+
+double matrizDistancia[NODE][NODE];
+int custoOrdenado[NODE];
+Instance instance;
 
 void getIndexesNodePositions(int positions[], string line);
 int getNodeDemand(string line);
@@ -56,13 +58,16 @@ void calculoFO(Solucao &s);
 void clonarsolucao(Solucao &sOri, Solucao &sClo);
 void escreverArquivo(Solucao solucao);
 string readSolutionFile(string nome);
+void ils(const double tempo_max, Solucao &s, Instance inst, double &tempo_melhor, double &tempo_total);
+void heuBLPM(Solucao &s);
+void gerarVizinha(Solucao &s_vizinha);
 
 int main(int argc, char *argv[])
 {
   clock_t h = 0;
-  Instance instance;
   Solucao solucao;
   string directoryFiles = current_working_directory() + "/";
+  double tempo_melhor, tempo_total;
 
   instance.name = getFileToRead();
   directoryFiles += instance.name + "/";
@@ -79,24 +84,12 @@ int main(int argc, char *argv[])
   }
 
   //printInstace(instance);
-  h = clock();
-  for (int i = 0; i < 1000; i++)
-  {
-    heuConAle(solucao, instance);
-  }
-  h = clock() - h;
-  cout << "Tempo solução 1000 vezes: " << (double)h / CLOCKS_PER_SEC << endl;
-  h = clock();
-  for (int i = 0; i < 1000; i++)
-  {
-    calculoFO(solucao);
-  }
-  h = clock() - h;
-  cout << "Tempo FO 1000 vezes: " << (double)h / CLOCKS_PER_SEC << endl;
+  heuConAle(solucao, instance);
+  calculoFO(solucao);
   printSolution(solucao);
+  ils(120,solucao,instance,tempo_melhor,tempo_total);
   escreverArquivo(solucao);
-  auto teste = readSolutionFile(instance.name);
-  cout << teste + "\n";
+  //auto teste = readSolutionFile(instance.name);
   return 0;
 }
 
@@ -386,14 +379,23 @@ void calculoFO(Solucao &s)
 {
   int j;
   s.cost = 0;
+  s.temRotaAcimaDaCapacidade = 0;
   for (int i = 0; i < s.trucks; i++)
   {
+    s.ocupacaoRota[i] = 0;
     s.cost += matrizDistancia[0][s.rotas[i][0]];
     for (j = 0; s.rotas[i][j + 1] != -1; j++)
     {
+      s.ocupacaoRota[i] += instance.demand[s.rotas[i][j]];
       s.cost += matrizDistancia[s.rotas[i][j]][s.rotas[i][j + 1]];
     }
+    s.ocupacaoRota[i] += instance.demand[s.rotas[i][j]];
     s.cost += matrizDistancia[s.rotas[i][j]][0];
+    if (s.ocupacaoRota[i] > instance.capacity)
+    {
+      s.temRotaAcimaDaCapacidade = 1;
+    }
+    
   }
 }
 
@@ -448,3 +450,80 @@ string readSolutionFile(string nome)
     return 0;
   }
 }
+
+void ils(const double tempo_max, Solucao &s, Instance inst, double &tempo_melhor, double &tempo_total)
+{
+  clock_t hI, hF;
+  Solucao s_vizinha;
+  hI = clock();
+  heuConAle(s, inst);
+  calculoFO(s);
+  heuBLPM(s);
+  hF = clock();
+  tempo_melhor = ((double)(hF - hI)) / CLOCKS_PER_SEC;
+  tempo_total = tempo_melhor;
+  while (tempo_total < tempo_max)
+  {
+    memcpy(&s_vizinha, &s, sizeof(s));
+    gerarVizinha(s_vizinha);
+    heuBLPM(s);
+    if (s_vizinha.cost < s.cost)
+    {
+      memcpy(&s, &s_vizinha, sizeof(s_vizinha));
+      hF = clock();
+      tempo_melhor = ((double)(hF - hI)) / CLOCKS_PER_SEC;
+    }
+    hF = clock();
+    tempo_total = ((double)(hF - hI)) / CLOCKS_PER_SEC;
+  }
+  printSolution(s);
+}
+
+void heuBLPM(Solucao &s)
+{
+  int foOri, aux;
+  int melFO = s.cost;
+  for (int i = 0; i < s.trucks; i++)
+  {
+    for (int j = 0; s.rotas[i][j + 1] != -1; j++)
+    {
+      for (int y = i + 1; y < s.trucks; y++)
+      {
+        if (s.rotas[y][j + 1] != -1)
+        {
+          aux = s.rotas[i][j];
+          s.rotas[i][j] = s.rotas[y][j];
+          s.rotas[y][j] = aux;
+          calculoFO(s);
+          if (s.temRotaAcimaDaCapacidade || melFO < s.cost)
+          {
+            s.rotas[y][j] = s.rotas[i][j];
+            s.rotas[i][j] = aux;
+          }
+          else
+          {
+            melFO = s.cost;
+          }
+        }
+      }
+    }
+  }
+  foOri = s.cost;
+  calculoFO(s);
+  //printSolution(s);
+}
+
+void gerarVizinha(Solucao &s_vizinha){
+  int rota1, rota2, pos1, pos2, nodesRota1, nodesRota2, aux;
+  rota1 = rand()%(s_vizinha.trucks);
+  rota2 = rand()%(s_vizinha.trucks);
+  for (nodesRota1 = 0; s_vizinha.rotas[rota1][nodesRota1] != -1; nodesRota1++);
+  for (nodesRota2 = 0; s_vizinha.rotas[rota2][nodesRota2] != -1; nodesRota2++);
+  pos1 = rand()%(nodesRota1);
+  pos2 = rand()%(nodesRota2);
+  aux = s_vizinha.rotas[rota1][pos1];
+  s_vizinha.rotas[rota1][pos1] = s_vizinha.rotas[rota2][pos2];
+  s_vizinha.rotas[rota2][pos2] = aux;
+  calculoFO(s_vizinha);
+  //printSolution(s_vizinha);
+};
