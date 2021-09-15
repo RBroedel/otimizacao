@@ -36,6 +36,7 @@ public:
   int ocupacaoRota[ROTAS];
   double tempo_melhor;
   double tempo_medio;
+  double tempo_total;
 };
 
 double matrizDistancia[NODE][NODE];
@@ -89,7 +90,6 @@ int main(int argc, char *argv[])
   {
     heuConGul(solucao, instance);
     calculoFO(solucao);
-    printSolution(solucao);
     ils(120, solucao, instance, tempo_melhor, tempo_total);
     escreverArquivo(solucao, i);
   }
@@ -160,6 +160,7 @@ void printSolution(Solucao solution)
   cout << "\nCusto: " << solution.cost << endl;
   cout << "Tempo melhor: " << solution.tempo_melhor << endl;
   cout << "Tempo medio: " << solution.tempo_medio << endl;
+  cout << "Tempo total: " << solution.tempo_total << endl;
 }
 
 void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTrucks)
@@ -432,6 +433,7 @@ void escreverArquivo(Solucao solucao, int iteracao)
   fprintf(f, "%s%d\n", "Custo: ", solucao.cost);
   fprintf(f, "%s%f\n", "Tempo Melhor: ", solucao.tempo_melhor);
   fprintf(f, "%s%f\n", "Tempo Medio: ", solucao.tempo_medio);
+  fprintf(f, "%s%f\n", "Tempo Total: ", solucao.tempo_total);
 
   fclose(f);
 }
