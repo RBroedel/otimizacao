@@ -34,7 +34,8 @@ public:
   int trucks;
   int rotas[ROTAS][NODE];
   int ocupacaoRota[ROTAS];
-  int temRotaAcimaDaCapacidade;
+  double tempo_melhor;
+  double tempo_medio;
 };
 
 double matrizDistancia[NODE][NODE];
@@ -49,14 +50,14 @@ void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTru
 string getFileToRead();
 string current_working_directory();
 void readInstance(string directory, Instance *instance);
-void heuConAle(Solucao &s, Instance inst);
+void heuConGul(Solucao &s, Instance inst);
 double calcDistancia(int x1, int x2, int y1, int y2);
 void ordenaCusto(int demand[], int dimensao);
 void montarMatrizDistancia(Instance);
 void montarMatrizDistanciaInstE134(Instance);
 void calculoFO(Solucao &s);
 void clonarsolucao(Solucao &sOri, Solucao &sClo);
-void escreverArquivo(Solucao solucao);
+void escreverArquivo(Solucao solucao, int iteracao);
 string readSolutionFile(string nome);
 void ils(const double tempo_max, Solucao &s, Instance inst, double &tempo_melhor, double &tempo_total);
 void heuBLPM(Solucao &s);
@@ -84,11 +85,15 @@ int main(int argc, char *argv[])
   }
 
   //printInstace(instance);
-  heuConAle(solucao, instance);
-  calculoFO(solucao);
-  printSolution(solucao);
-  ils(120,solucao,instance,tempo_melhor,tempo_total);
-  escreverArquivo(solucao);
+  for (int i = 1; i < 4; i++)
+  {
+    heuConGul(solucao, instance);
+    calculoFO(solucao);
+    printSolution(solucao);
+    ils(120, solucao, instance, tempo_melhor, tempo_total);
+    escreverArquivo(solucao, i);
+  }
+
   //auto teste = readSolutionFile(instance.name);
   return 0;
 }
@@ -153,6 +158,8 @@ void printSolution(Solucao solution)
     cout << "Ocupacao: " << solution.ocupacaoRota[i];
   }
   cout << "\nCusto: " << solution.cost << endl;
+  cout << "Tempo melhor: " << solution.tempo_melhor << endl;
+  cout << "Tempo medio: " << solution.tempo_medio << endl;
 }
 
 void getDimensionAndTrucksFromName(string name, int *dimension, int *instanceTrucks)
@@ -290,7 +297,7 @@ void ordenaCusto(int demand[], int dimensao)
   }
 }
 
-void heuConAle(Solucao &s, Instance inst)
+void heuConGul(Solucao &s, Instance inst)
 {
   s.trucks = inst.trucks;
   memset(s.rotas, -1, sizeof(s.rotas));
@@ -379,7 +386,6 @@ void calculoFO(Solucao &s)
 {
   int j;
   s.cost = 0;
-  s.temRotaAcimaDaCapacidade = 0;
   for (int i = 0; i < s.trucks; i++)
   {
     s.ocupacaoRota[i] = 0;
@@ -393,9 +399,8 @@ void calculoFO(Solucao &s)
     s.cost += matrizDistancia[s.rotas[i][j]][0];
     if (s.ocupacaoRota[i] > instance.capacity)
     {
-      s.temRotaAcimaDaCapacidade = 1;
+      s.cost = s.cost * 10;
     }
-    
   }
 }
 
@@ -404,9 +409,9 @@ void clonarsolucao(Solucao &sOri, Solucao &sClo)
   memcpy(&sClo, &sOri, sizeof(sOri));
 }
 
-void escreverArquivo(Solucao solucao)
+void escreverArquivo(Solucao solucao, int iteracao)
 {
-  string saida = "saida.txt";
+  string saida = instance.name + "-" + "saida" + to_string(iteracao) + ".txt";
   FILE *f = fopen(saida.c_str(), "w");
 
   if (f == NULL)
@@ -425,6 +430,8 @@ void escreverArquivo(Solucao solucao)
     fprintf(f, "%s%d\n", "Ocupacao: ", solucao.ocupacaoRota[i]);
   }
   fprintf(f, "%s%d\n", "Custo: ", solucao.cost);
+  fprintf(f, "%s%f\n", "Tempo Melhor: ", solucao.tempo_melhor);
+  fprintf(f, "%s%f\n", "Tempo Medio: ", solucao.tempo_medio);
 
   fclose(f);
 }
@@ -455,13 +462,15 @@ void ils(const double tempo_max, Solucao &s, Instance inst, double &tempo_melhor
 {
   clock_t hI, hF;
   Solucao s_vizinha;
+  int i = 0;
   hI = clock();
-  heuConAle(s, inst);
+  heuConGul(s, inst);
   calculoFO(s);
   heuBLPM(s);
   hF = clock();
   tempo_melhor = ((double)(hF - hI)) / CLOCKS_PER_SEC;
   tempo_total = tempo_melhor;
+  i++;
   while (tempo_total < tempo_max)
   {
     memcpy(&s_vizinha, &s, sizeof(s));
@@ -475,13 +484,16 @@ void ils(const double tempo_max, Solucao &s, Instance inst, double &tempo_melhor
     }
     hF = clock();
     tempo_total = ((double)(hF - hI)) / CLOCKS_PER_SEC;
+    i++;
   }
-  printSolution(s);
+  s.tempo_melhor = tempo_melhor;
+  s.tempo_medio = tempo_total / i;
+  //printSolution(s);
 }
 
 void heuBLPM(Solucao &s)
 {
-  int foOri, aux;
+  int aux;
   int melFO = s.cost;
   for (int i = 0; i < s.trucks; i++)
   {
@@ -495,7 +507,7 @@ void heuBLPM(Solucao &s)
           s.rotas[i][j] = s.rotas[y][j];
           s.rotas[y][j] = aux;
           calculoFO(s);
-          if (s.temRotaAcimaDaCapacidade || melFO < s.cost)
+          if (melFO < s.cost)
           {
             s.rotas[y][j] = s.rotas[i][j];
             s.rotas[i][j] = aux;
@@ -508,19 +520,21 @@ void heuBLPM(Solucao &s)
       }
     }
   }
-  foOri = s.cost;
   calculoFO(s);
   //printSolution(s);
 }
 
-void gerarVizinha(Solucao &s_vizinha){
+void gerarVizinha(Solucao &s_vizinha)
+{
   int rota1, rota2, pos1, pos2, nodesRota1, nodesRota2, aux;
-  rota1 = rand()%(s_vizinha.trucks);
-  rota2 = rand()%(s_vizinha.trucks);
-  for (nodesRota1 = 0; s_vizinha.rotas[rota1][nodesRota1] != -1; nodesRota1++);
-  for (nodesRota2 = 0; s_vizinha.rotas[rota2][nodesRota2] != -1; nodesRota2++);
-  pos1 = rand()%(nodesRota1);
-  pos2 = rand()%(nodesRota2);
+  rota1 = rand() % (s_vizinha.trucks);
+  rota2 = rand() % (s_vizinha.trucks);
+  for (nodesRota1 = 0; s_vizinha.rotas[rota1][nodesRota1] != -1; nodesRota1++)
+    ;
+  for (nodesRota2 = 0; s_vizinha.rotas[rota2][nodesRota2] != -1; nodesRota2++)
+    ;
+  pos1 = rand() % (nodesRota1);
+  pos2 = rand() % (nodesRota2);
   aux = s_vizinha.rotas[rota1][pos1];
   s_vizinha.rotas[rota1][pos1] = s_vizinha.rotas[rota2][pos2];
   s_vizinha.rotas[rota2][pos2] = aux;
