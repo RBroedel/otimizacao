@@ -490,6 +490,7 @@ void ils(const double tempo_max, Solucao &s, Instance inst, double &tempo_melhor
   }
   s.tempo_melhor = tempo_melhor;
   s.tempo_medio = tempo_total / i;
+  s.tempo_total = tempo_total;
   //printSolution(s);
 }
 
